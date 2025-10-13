@@ -234,3 +234,21 @@ exports.getSessionSummary = async (req, res) => {
         res.status(500).json({ success: false, message: 'Server Error', error: error.message });
     }
 };
+
+// @desc    Get all milk entries for a specific customer (for Admin)
+// @route   GET /api/admin/customers/:customerId/entries
+// @access  Private (Admin Only)
+exports.getCustomerEntriesForAdmin = async (req, res) => {
+    try {
+        const customer = await User.findById(req.params.customerId);
+        if (!customer) {
+            return res.status(404).json({ success: false, message: 'Customer not found' });
+        }
+
+        const entries = await MilkEntry.find({ customer: req.params.customerId }).sort({ date: -1 });
+
+        res.status(200).json({ success: true, count: entries.length, data: entries });
+    } catch (error) {
+        res.status(500).json({ success: false, message: 'Server Error', error: error.message });
+    }
+};
