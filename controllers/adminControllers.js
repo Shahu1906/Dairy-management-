@@ -245,7 +245,7 @@ exports.getCustomerEntriesForAdmin = async (req, res) => {
             return res.status(404).json({ success: false, message: 'Customer not found' });
         }
 
-        const entries = await MilkEntry.find({ customer: req.params.customerId }).sort({ date: -1 });
+        const entries = await MilkEntry.find({ customer: new mongoose.Types.ObjectId(req.params.customerId) }).sort({ date: -1 });
 
         res.status(200).json({ success: true, count: entries.length, data: entries });
     } catch (error) {
