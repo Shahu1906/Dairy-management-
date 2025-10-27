@@ -252,3 +252,107 @@ exports.getCustomerEntriesForAdmin = async (req, res) => {
         res.status(500).json({ success: false, message: 'Server Error', error: error.message });
     }
 };
+
+// @desc    Get all milk entries for a specific customer (for Admin)
+exports.getCustomerEntriesForAdmin = async (req, res) => {
+    // ... (keep this function as it is) ...
+};
+
+// ** NEW FUNCTION ADDED BELOW **
+
+// @desc    Get a summary of all payments made in the last X days
+// @route   GET /api/admin/payments/summary?days=X
+// @access  Private (Admin Only)
+exports.getRecentPaymentsSummary = async (req, res) => {
+    // Get the number of days from the query parameter, default to 30 if not provided
+    const days = parseInt(req.query.days) || 30;
+
+    if (days <= 0) {
+        return res.status(400).json({ success: false, message: 'Number of days must be positive.' });
+    }
+
+    try {
+        // Calculate the start date
+        const startDate = new Date();
+        startDate.setDate(startDate.getDate() - days);
+        startDate.setHours(0, 0, 0, 0); // Start of the day
+
+        // Use aggregation to fetch payments and calculate sum
+        const paymentSummary = await Payment.aggregate([
+            {
+                // Stage 1: Match payments within the date range
+                $match: {
+                    date: { $gte: startDate }
+                }
+            },
+            {
+                // Stage 2: Join with users collection to get customer details
+                $lookup: {
+                    from: 'users', // The name of the users collection
+                    localField: 'customer', // Field from the payments collection
+                    foreignField: '_id', // Field from the users collection
+                    as: 'customerDetails' // Name of the new array field to add
+                }
+            },
+            {
+                // Stage 3: Deconstruct the customerDetails array (should only be one element)
+                $unwind: '$customerDetails'
+            },
+            {
+                // Stage 4: Sort by date, most recent first
+                $sort: {
+                    date: -1 
+                }
+            },
+            {
+                // Stage 5: Group everything to calculate total and create the list
+                $group: {
+                    _id: null, // Group all documents into one
+                    paymentsList: {
+                        $push: { // Create an array of payment details
+                            _id: '$_id',
+                            date: '$date',
+                            amount: '$amount',
+                            notes: '$notes',
+                            customerName: '$customerDetails.name',
+                            customerId: '$customerDetails.customerId'
+                        }
+                    },
+                    totalPaidAmount: { $sum: '$amount' } // Calculate the sum of amounts
+                }
+            },
+            {
+                // Stage 6: Project the final output shape
+                $project: {
+                    _id: 0, // Remove the default _id field
+                    paymentsList: 1,
+                    totalPaidAmount: 1
+                }
+            }
+        ]);
+
+        if (paymentSummary.length === 0) {
+            // If no payments found in the period
+            return res.status(200).json({
+                success: true,
+                data: {
+                    days: days,
+                    paymentsList: [],
+                    totalPaidAmount: 0
+                }
+            });
+        }
+
+        // Return the summary object
+        res.status(200).json({
+            success: true,
+            data: {
+                days: days,
+                ...paymentSummary[0] // Spread the results from the aggregation
+            }
+        });
+
+    } catch (error) {
+        res.status(500).json({ success: false, message: 'Server Error', error: error.message });
+    }
+};

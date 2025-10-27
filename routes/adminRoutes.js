@@ -30,6 +30,7 @@ router.get('/session-summary', getSessionSummary);
 // **THE FIX: The route definition**
 router.get('/customers/:customerId/entries', getCustomerEntriesForAdmin);
 
+router.get('/payments/summary', getRecentPaymentsSummary); // <-- New route
 module.exports = router;
 
 // hello this is new commit
