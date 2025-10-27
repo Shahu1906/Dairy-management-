@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 
-// **THE FIX: Pointing back to the correct PLURAL filename**
+// **THE FIX: Add the missing function to the import list**
 const { 
     addMilkEntry, 
     updateMilkEntry,
@@ -9,8 +9,9 @@ const {
     getCustomerSummary,
     addPayment,
     getSessionSummary,
-    getCustomerEntriesForAdmin 
-} = require('../controllers/adminControllers'); // <-- This now correctly matches your file structure
+    getCustomerEntriesForAdmin,
+    getRecentPaymentsSummary // <-- Ensure this is included
+} = require('../controllers/adminControllers'); 
 
 // Import middleware for security
 const { protect } = require('../middleware/authMiddleware');
@@ -26,11 +27,10 @@ router.post('/payments', addPayment);
 router.get('/customers', getAllCustomers);
 router.get('/customers/:customerId/summary', getCustomerSummary);
 router.get('/session-summary', getSessionSummary);
-
-// **THE FIX: The route definition**
 router.get('/customers/:customerId/entries', getCustomerEntriesForAdmin);
 
-router.get('/payments/summary', getRecentPaymentsSummary); // <-- New route
+// This route definition is correct, it just needed the import above
+router.get('/payments/summary', getRecentPaymentsSummary); 
+
 module.exports = router;
 
-// hello this is new commit
